@@ -23,7 +23,7 @@ const ACTIVITIES = [
   { id: "foods", name: "foods" },
 ];
 
-const fallbackHotels = [
+const HOTELS = [
   { id: "none", name: "Select", address: "", lat: 0, lng: 0 },
   {
     "id": 1,
@@ -84,7 +84,7 @@ const KEY = "mm_posts_v1";
 
 
 
-export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate, prefillData }) {
+export default function ModalPost({ hotels = HOTELS, onCancel, onCreate, prefillData }) {
   const nav = useNavigate();
   const { user: authUser } = useContext(AuthContext);
 

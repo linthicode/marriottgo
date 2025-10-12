@@ -92,9 +92,7 @@ export default function Dashboard() {
     if (!confirm("Reset posts to default sample? This will clear saved posts.")) return;
     localStorage.removeItem(KEY);
     // reset to the same initial sample used above
-    const sample = [
-      {},
-    ];
+    const sample = [];
     setPosts(sample);
   }
   return (
