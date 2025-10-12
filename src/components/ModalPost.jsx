@@ -6,12 +6,12 @@ import { AuthContext } from "../auth/AuthProvider";
 const ACTIVITIES = [
   { id: "nature", name: "nature" },
   { id: "museums", name: "museums" },
-  { id: "theatres and entertainments", name: "theatres and entertainments" },
-  { id: "urban_ nvironment", name: "urban environment" },
+  { id: "theatres_and_entertainments", name: "theatres_and_entertainments" },
+  { id: "urban_environment", name: "urban_environment" },
   { id: "historic", name: "historic" },
   { id: "religion", name: "religion" },
   { id: "architecture", name: "architecture" },
-  { id: "industrial facilities", name: "industrial facilities" },
+  { id: "industrial_facilities", name: "industrial_facilities" },
   { id: "amusements", name: "amusements" },
   { id: "sport", name: "sport" },
   { id: "adult", name: "adult" },
@@ -100,6 +100,8 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
   const [activityId, setActivityId] = useState(ACTIVITIES[0]?.id || "none");
   const [activityTags, setActivityTags] = useState([]);
   const [photos, setPhotos] = useState([]);
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
   // Address should represent the event/attraction location (not the hotel's address)
   const [address, setAddress] = useState("");
   const [errors, setErrors] = useState({ title: "", address: "" });
@@ -205,6 +207,7 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
       hotelAddress: hotel.address,
       experienceTitle: expTitle,
       address: address,
+      rating: rating,
       addressCoords: addressCoords,
       activityTags: activityTags,
       caption: desc,
@@ -361,6 +364,34 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
           )}
         </div>
         {errors.address && <div style={{ color: "#b81843", marginTop: 6, fontSize: 13 }}>{errors.address}</div>}
+
+        {/* Rating: 1-5 stars (no half stars) */}
+        <label className="block mt-6 mb-1 text-gray-700">Rating</label>
+        <div className="flex items-center gap-2 mb-2" role="radiogroup" aria-label="Rating">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => setRating(n)}
+              onMouseEnter={() => setHoverRating(n)}
+              onMouseLeave={() => setHoverRating(0)}
+              aria-checked={rating === n}
+              aria-label={`${n} star${n > 1 ? "s" : ""}`}
+              style={{
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                fontSize: 20,
+                lineHeight: 1,
+                padding: 4,
+                color: (hoverRating || rating) >= n ? "#b81843" : "#d1d5db",
+              }}
+            >
+              {(hoverRating || rating) >= n ? "★" : "☆"}
+            </button>
+          ))}
+          <span style={{ fontSize: 13, color: "#666" }}>{rating ? `${rating} / 5` : "No rating"}</span>
+        </div>
 
         <label className="block mt-6 mb-1 text-gray-700">What did you do?</label>
         <div className="flex items-center gap-2">

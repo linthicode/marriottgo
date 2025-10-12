@@ -63,6 +63,7 @@ export default function PostCard({ post }) {
   const activityTags = Array.isArray(sample.activityTags)
     ? sample.activityTags
     : [];
+  const rating = typeof sample.rating === 'number' ? sample.rating : 0;
   const caption = sample.caption || "";
   const createdAt = sample.createdAt || Date.now();
   const { user: authUser } = useContext(AuthContext);
@@ -118,30 +119,37 @@ export default function PostCard({ post }) {
           justifyContent: "space-between",
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <span
-            onClick={handleHotelNameClick}
-            style={{
-              color: marriottRed,
-              fontWeight: 700,
-              fontSize: 20,
-              textDecoration: "none",
-              lineHeight: 1.1,
-              cursor: "pointer",
-            }}
-          >
-            {displayTitle}
-          </span>
-          <span
-            style={{
-              color: marriottRed,
-              fontWeight: 500,
-              fontSize: 16,
-              marginTop: 0,
-            }}
-          >
-            {hotelName}
-          </span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+            <span
+              onClick={handleHotelNameClick}
+              style={{
+                color: marriottRed,
+                fontWeight: 700,
+                fontSize: 20,
+                textDecoration: "none",
+                lineHeight: 1.1,
+                cursor: "pointer",
+              }}
+            >
+              {displayTitle}
+            </span>
+            {eventAddress && (
+              <span
+                style={{
+                  color: "#444",
+                  fontWeight: 500,
+                  fontSize: 13,
+                  marginTop: 0,
+                  display: 'block',
+                  overflowWrap: 'anywhere',
+                  wordBreak: 'break-word',
+                }}
+              >
+                {eventAddress}
+              </span>
+            )}
+          </div>
         </div>
 
         {userHandle && (
@@ -234,25 +242,19 @@ export default function PostCard({ post }) {
         >
           {fmtDate(createdAt)}
         </span>
-        {activityTags.length > 0 && (
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            {activityTags.map((t) => (
-              <span
-                key={t}
-                style={{
-                  background: marriottRed,
-                  color: "#fff",
-                  borderRadius: 12,
-                  padding: "4px 12px",
-                  fontWeight: 600,
-                  fontSize: 13,
-                }}
-              >
-                {t}
-              </span>
-            ))}
-          </div>
-        )}
+        {/* read-only rating stars (1-5) */}
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }} aria-hidden>
+          {rating > 0 ? (
+            <>
+              {[1,2,3,4,5].map((n) => (
+                <span key={n} style={{ color: rating >= n ? marriottRed : '#ddd', fontSize: 16 }}>{rating >= n ? '★' : '☆'}</span>
+              ))}
+              <span style={{ fontSize: 13, color: '#666', marginLeft: 6 }}>{`${rating}/5`}</span>
+            </>
+          ) : (
+            <span style={{ fontSize: 13, color: '#666' }}>No rating</span>
+          )}
+        </div>
       </div>
 
       <div
@@ -270,6 +272,25 @@ export default function PostCard({ post }) {
       >
         {caption}
       </div>
+      {/* moved activity tags below the description (display as hashtags, wrap to new line when needed) */}
+      {activityTags.length > 0 && (
+        <div
+          style={{
+            marginTop: 12,
+            maxWidth: '100%',
+            color: '#555',
+            fontSize: 13,
+            display: 'block',
+            wordWrap: 'break-word',
+            whiteSpace: 'normal',
+          }}
+          title={activityTags.map((t) => `#${String(t).replace(/\s+/g, '')}`).join(' ')}
+        >
+          {activityTags.map((t, i) => (
+            <span key={t + i} style={{ marginRight: 8 }}>{`#${String(t).replace(/\s+/g, '')}`}</span>
+          ))}
+        </div>
+      )}
       <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end" }}>
         {bookUrl ? (
           <button
