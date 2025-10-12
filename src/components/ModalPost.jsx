@@ -2,6 +2,7 @@ import { useState, useRef, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { geocode } from "../helper/geoapify";
 import { AuthContext } from "../auth/AuthProvider";
+import { createPost } from "../api/posts";
 import Avatar from '@mui/material/Avatar';
 import PersonIcon from '@mui/icons-material/Person';
 import Snackbar from '@mui/material/Snackbar';
@@ -97,6 +98,12 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate,
     );
   }
 
+  // if user is not authenticated, redirect to login
+  if (authUser === null) {
+    try { nav("/login"); } catch {}
+    return null;
+  }
+
   // store hotelId as a string so it matches the string value returned by <select>
   const [hotelId, setHotelId] = useState(String(hotels[0]?.id ?? "none"));
   const [desc, setDesc] = useState(prefillData?.description || "");
@@ -122,8 +129,12 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate,
   const [showSnackbar, setShowSnackbar] = useState(false);
 
   const closeToDashboard = () => {
-    if (onCancel) onCancel();
-    try { nav("/dashboard"); } catch {}
+    if (onCancel) {
+      onCancel();
+    } else {
+      // Only navigate if no onCancel callback is provided (standalone usage)
+      try { nav("/dashboard"); } catch {}
+    }
   };
 
   const handlePhotoChange = (e) => {
@@ -182,7 +193,7 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate,
     setShowSuggestions(false);
   };
 
-  const onDone = (e) => {
+  const onDone = async (e) => {
     e.preventDefault();
     // validate required fields
     const nextErrors = { title: "", address: "", hotel: "", activities: "" };
@@ -211,46 +222,71 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate,
 
     // find by comparing stringified ids because <select> returns strings
     const hotel = hotels.find(h => String(h.id) === String(hotelId)) || { id: "none", name: "", address: "" };
-    const postUser = authUser
-      ? {
-          id: authUser.id,
-          handle: authUser.user_metadata?.username || authUser.email,
-          avatar: authUser.user_metadata?.avatar_url || authUser.avatar || null,
-        }
-      : { id: "u1", handle: "Username", avatar: null };
 
-    const post = {
-      id: (crypto?.randomUUID?.() || `${Date.now()}`),
-      user: postUser,
-      hotelId: hotel.id,
-      hotelName: hotel.name,
-      hotelAddress: hotel.address,
-      experienceTitle: expTitle,
+    // Transform data to match Supabase schema
+    const postData = {
+      user_id: authUser.id,
+      hotel_id: hotel.id,
+      hotel_name: hotel.name,
+      hotel_address: hotel.address,
+      experience_title: expTitle,
       address: address,
+      address_lat: addressCoords?.lat || null,
+      address_lng: addressCoords?.lng || null,
       rating: rating,
-      addressCoords: addressCoords,
-      activityTags: activityTags,
+      activity_tags: activityTags,
       caption: desc,
-      photos,
-      likes: 0,
-      comments: 0,
-      createdAt: Date.now(),
+      photos: photos,
     };
 
     try {
-      const prev = JSON.parse(localStorage.getItem(KEY) || "[]");
-      localStorage.setItem(KEY, JSON.stringify([post, ...prev]));
-    } catch {}
+      // Save to Supabase
+      const { data, error } = await createPost(postData);
+      
+      if (error) {
+        console.error("Failed to save post to Supabase:", error);
+        // Show error message to user
+        setShowSnackbar(true);
+        return;
+      }
 
-    if (onCreate) onCreate(post);
-    
-    // Show success snackbar
-    setShowSnackbar(true);
-    
-    // Close modal after a short delay to let user see the snackbar
-    setTimeout(() => {
-      closeToDashboard();
-    }, 1500);
+      // Transform Supabase response back to frontend format for compatibility
+      const post = {
+        id: data.id,
+        user: {
+          id: authUser.id,
+          handle: authUser.user_metadata?.username || authUser.email,
+          avatar: authUser.user_metadata?.avatar_url || authUser.avatar || null,
+        },
+        hotelId: data.hotel_id,
+        hotelName: data.hotel_name,
+        hotelAddress: data.hotel_address,
+        experienceTitle: data.experience_title,
+        address: data.address,
+        rating: data.rating,
+        addressCoords: data.address_lat && data.address_lng ? { lat: data.address_lat, lng: data.address_lng } : null,
+        activityTags: data.activity_tags,
+        caption: data.caption,
+        photos: data.photos,
+        likes: data.likes,
+        comments: data.comments,
+        createdAt: new Date(data.created_at).getTime(),
+      };
+
+      if (onCreate) onCreate(post);
+      
+      // Show success snackbar
+      setShowSnackbar(true);
+      
+      // Close modal after a short delay to let user see the snackbar
+      setTimeout(() => {
+        closeToDashboard();
+      }, 1500);
+    } catch (error) {
+      console.error("Unexpected error saving post:", error);
+      // Show error message to user
+      setShowSnackbar(true);
+    }
   };
 
   // Standalone variables (for easy access at the end of the component)

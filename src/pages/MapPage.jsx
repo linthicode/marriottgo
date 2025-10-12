@@ -290,7 +290,9 @@ export default function MapPage() {
                 setShowPostModal(false);
                 setPrefillData(null);
               }} 
-              onCreate={() => {
+              onCreate={(post) => {
+                // Post is already saved to localStorage by ModalPost component
+                console.log('Post created from MapPage:', post);
                 setShowPostModal(false);
                 setPrefillData(null);
               }}

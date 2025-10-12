@@ -1,22 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import PostCard from "../components/PostCard";
 import ModalPost from "../components/ModalPost";
+import { getPosts } from "../api/posts";
 
 const KEY = "mm_posts_v1";
 
 export default function Dashboard() {
   const [showPostModal, setShowPostModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [posts, setPosts] = useState(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem(KEY) || "null");
-      if (Array.isArray(stored)) return stored;
-    } catch {}
-
-    // default sample post (you can replace image files in public/images/)
-    return [];
-  });
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Filter states
   const [selectedActivities, setSelectedActivities] = useState([]);
@@ -45,6 +39,52 @@ export default function Dashboard() {
     setSelectedRating(0);
     setSortBy('newest');
   };
+
+  // Fetch posts from Supabase
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await getPosts();
+        
+        if (error) {
+          console.error('Error fetching posts:', error);
+          setPosts([]);
+        } else {
+          // Transform Supabase data to frontend format
+          const transformedPosts = data.map(post => ({
+            id: post.id,
+            user: {
+              id: post.user?.id || post.user_id,
+              handle: post.user?.user_metadata?.username || post.user?.email || 'Unknown User',
+              avatar: post.user?.user_metadata?.avatar_url || post.user?.avatar || null,
+            },
+            hotelId: post.hotel_id,
+            hotelName: post.hotel_name,
+            hotelAddress: post.hotel_address,
+            experienceTitle: post.experience_title,
+            address: post.address,
+            rating: post.rating,
+            addressCoords: post.address_lat && post.address_lng ? { lat: post.address_lat, lng: post.address_lng } : null,
+            activityTags: post.activity_tags,
+            caption: post.caption,
+            photos: post.photos,
+            likes: post.likes,
+            comments: post.comments,
+            createdAt: new Date(post.created_at).getTime(),
+          }));
+          setPosts(transformedPosts);
+        }
+      } catch (err) {
+        console.error('Unexpected error fetching posts:', err);
+        setPosts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, []);
 
   // Filter and sort posts
   const filteredPosts = posts
@@ -80,22 +120,14 @@ export default function Dashboard() {
     });
 
    function handleCreate(post) {
-    setPosts((prev) => {
-      const next = [post, ...prev];
-      localStorage.setItem(KEY, JSON.stringify(next));
-      return next;
-    });
+    // Add the new post to the beginning of the list
+    setPosts((prev) => [post, ...prev]);
     setShowPostModal(false);
   }
 
   function handleReset() {
-    if (!confirm("Reset posts to default sample? This will clear saved posts.")) return;
-    localStorage.removeItem(KEY);
-    // reset to the same initial sample used above
-    const sample = [
-      {},
-    ];
-    setPosts(sample);
+    if (!confirm("Clear all posts? This action cannot be undone.")) return;
+    setPosts([]);
   }
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -249,7 +281,28 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {posts.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-20">
+              <div className="relative w-24 h-24 mx-auto mb-6">
+                {/* Outer spinning ring */}
+                <div className="absolute inset-0 border-4 border-[#a11d2b]/20 rounded-full"></div>
+                <div className="absolute inset-0 border-4 border-transparent border-t-[#a11d2b] rounded-full animate-spin"></div>
+                
+                {/* Inner spinning ring (opposite direction) */}
+                <div className="absolute inset-3 border-4 border-[#8B1523]/20 rounded-full"></div>
+                <div className="absolute inset-3 border-4 border-transparent border-b-[#8B1523] rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1s' }}></div>
+                
+                {/* Center icon */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-8 h-8 bg-gradient-to-r from-[#a11d2b] to-[#8B1523] rounded-full flex items-center justify-center shadow-lg">
+                    <span className="text-white text-xl">🏨</span>
+                  </div>
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-gray-600 mb-2">Loading posts...</h3>
+              <p className="text-gray-500">Fetching your travel experiences</p>
+            </div>
+          ) : posts.length === 0 ? (
             <div className="text-center py-20">
               <svg className="w-24 h-24 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
