@@ -1,5 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../auth/AuthProvider";
 
 const ACTIVITIES = [
   { id: "nature", name: "nature" },
@@ -76,15 +77,20 @@ const fallbackHotels = [
 
 const KEY = "mm_posts_v1";
 
-// Dummy user info (replace with props/context as needed)
-const user = {
-  id: "u1",
-  handle: "Username",
-  avatar: "/react.svg",
-};
+
 
 export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate }) {
   const nav = useNavigate();
+  const { user: authUser } = useContext(AuthContext);
+
+  // while auth state is being determined, show a small placeholder to avoid blank modal
+  if (authUser === undefined) {
+    return (
+      <div className="grid place-items-center min-h-screen">
+        <div className="p-6 bg-white rounded shadow">Checking session…</div>
+      </div>
+    );
+  }
 
   // store hotelId as a string so it matches the string value returned by <select>
   const [hotelId, setHotelId] = useState(String(hotels[0]?.id ?? "none"));
@@ -135,9 +141,17 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
 
     // find by comparing stringified ids because <select> returns strings
     const hotel = hotels.find(h => String(h.id) === String(hotelId)) || { id: "none", name: "", address: "" };
+    const postUser = authUser
+      ? {
+          id: authUser.id,
+          handle: authUser.user_metadata?.username || authUser.email,
+          avatar: authUser.user_metadata?.avatar_url || authUser.avatar || '/react.svg',
+        }
+      : { id: "u1", handle: "Username", avatar: "/react.svg" };
+
     const post = {
       id: (crypto?.randomUUID?.() || `${Date.now()}`),
-      user,
+      user: postUser,
       hotelId: hotel.id,
       hotelName: hotel.name,
       hotelAddress: hotel.address,
@@ -202,8 +216,8 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
           alignItems: "center",
           gap: 8,
         }}>
-          <img src={user.avatar} width="32" height="32" alt="avatar" style={{ borderRadius: "999px" }} />
-          <span style={{ fontWeight: 600 }}>{user.handle}</span>
+          <img src={authUser?.user_metadata?.avatar_url || authUser?.avatar || "/react.svg"} width="32" height="32" alt="avatar" style={{ borderRadius: "999px" }} />
+          <span style={{ fontWeight: 600 }}>{authUser?.user_metadata?.username || authUser?.email || 'Username'}</span>
         </div>
 
         {/* Photo uploader */}

@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../auth/AuthProvider";
 
 function fmtDate(ts) {
   try {
@@ -64,9 +65,18 @@ export default function PostCard({ post }) {
     : [];
   const caption = sample.caption || "";
   const createdAt = sample.createdAt || Date.now();
-  const userHandle = sample.user?.handle;
-  // some posts use `avatar` instead of `image` on user
-  const pfpImage = sample.user?.avatar || sample.user?.image;
+  const { user: authUser } = useContext(AuthContext);
+  // prefer the user embedded on the post, otherwise fall back to the logged-in user
+  const displayUser = sample.user || authUser || null;
+  const userHandle =
+    displayUser?.handle || displayUser?.user_metadata?.username || displayUser?.email || "";
+  // handle multiple possible avatar fields
+  const pfpImage =
+    displayUser?.avatar ||
+    displayUser?.image ||
+    displayUser?.user_metadata?.avatar_url ||
+    displayUser?.user_metadata?.avatar ||
+    null;
 
   const handleHotelNameClick = () => {
     window.dispatchEvent(

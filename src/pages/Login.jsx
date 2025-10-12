@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import supabase  from "../helper/supabaseClient";
 import { Link, useNavigate } from "react-router-dom";
+import { AuthContext } from "../auth/AuthProvider";
 
 
 export default function Login() {
@@ -10,6 +11,8 @@ export default function Login() {
     const [password, setPassword] = useState("");
     const [message, setMessage] = useState("");
     const [username, setUsername] = useState('');
+
+    const { setUser } = useContext(AuthContext);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -29,6 +32,8 @@ export default function Login() {
 
             if (data) {
                 setMessage("User account created!");
+                // set global user from supabase response
+                setUser(data.user ?? null);
                 setEmail("");
                 setPassword("");
                 setUsername("");
@@ -48,6 +53,8 @@ export default function Login() {
 
             if (data) {
                 setMessage("");
+                // set global user and navigate
+                setUser(data.user ?? null);
                 setEmail("");
                 setPassword("");
                 navigate("/dashboard");
@@ -141,10 +148,7 @@ return (
             </form>
             <div className="mt-4 text-center text-sm text-gray-500">
                 <p>
-                    Developer shortcuts:{" "}
-                    <Link to="/dashboard" className="text-[#B81843] hover:underline">
-                        Go to Dashboard
-                    </Link>
+                    {/* Dev shortcuts removed for security */}
                 </p>
             </div>
         </div>
