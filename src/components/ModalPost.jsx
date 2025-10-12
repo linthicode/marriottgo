@@ -251,6 +251,9 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
   // 3) address string for the event/attraction
   const EVENT_ADDRESS_STRING = address || "";
 
+  // 4) rating integer: -1 if no rating provided, otherwise 1-5
+  const RATING_INT = typeof rating === 'number' && rating > 0 ? Math.min(5, Math.max(1, Math.floor(rating))) : -1;
+
   // 4) tag index array (0/1) according to the mapping provided
   {/*I think the array works as intended, create an array and fill in int 1 into the end related to the tag*/}
   const TAG_INDEX_MAP = {
