@@ -9,15 +9,19 @@ import torch
 import re
 
 class Recs:
-    def __init__(self, user_embedding=None, df=None, locations=None, location_vector=None, posts=None, init_full = True):
+    def __init__(self, user_embedding=None, df=None, locations=None, location_vector=None, posts=None, init_full=True):
 
-        self.__user_embedding = user_embedding
+        self.__user_embedding = np.array(user_embedding) if user_embedding is not None else None
 
         if init_full:
-            self.__user_embedding = np.array(user_embedding)
             self.__df = df
-            self.__locations = np.array(locations)
+            self.__locations = np.array(locations) if locations is not None else None
             self.__posts = posts
+            self.__model_name = "cardiffnlp/twitter-roberta-base-sentiment"
+            self.__tokenizer = AutoTokenizer.from_pretrained(self.__model_name)
+            self.__model = AutoModelForSequenceClassification.from_pretrained(self.__model_name)
+        else:
+            # For lightweight mode, only initialize sentiment analysis
             self.__model_name = "cardiffnlp/twitter-roberta-base-sentiment"
             self.__tokenizer = AutoTokenizer.from_pretrained(self.__model_name)
             self.__model = AutoModelForSequenceClassification.from_pretrained(self.__model_name)
