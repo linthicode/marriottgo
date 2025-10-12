@@ -86,7 +86,8 @@ const user = {
 export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate }) {
   const nav = useNavigate();
 
-  const [hotelId, setHotelId] = useState(hotels[0]?.id || "none");
+  // store hotelId as a string so it matches the string value returned by <select>
+  const [hotelId, setHotelId] = useState(String(hotels[0]?.id ?? "none"));
   const [desc, setDesc] = useState("");
   const [expTitle, setExpTitle] = useState("");
   const [activityId, setActivityId] = useState(ACTIVITIES[0]?.id || "none");
@@ -132,14 +133,19 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
       return;
     }
 
-    const hotel = hotels.find(h => h.id === hotelId) || { id: "none", name: "" };
+    // find by comparing stringified ids because <select> returns strings
+    const hotel = hotels.find(h => String(h.id) === String(hotelId)) || { id: "none", name: "", address: "" };
     const post = {
       id: (crypto?.randomUUID?.() || `${Date.now()}`),
       user,
       hotelId: hotel.id,
       hotelName: hotel.name,
+<<<<<<< HEAD
       experienceTitle: expTitle,
       address,
+=======
+      hotelAddress: hotel.address,
+>>>>>>> 2845c110c5174bc836758ffaa0b2a0dc0169ad0c
       activityTags: activityTags,
       caption: desc,
       photos,
@@ -236,7 +242,7 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
           className="w-[300px] border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-black"
         >
           {hotels.map((h) => (
-            <option key={h.id} value={h.id}>
+            <option key={h.id} value={String(h.id)}>
               {h.name}
             </option>
           ))}
