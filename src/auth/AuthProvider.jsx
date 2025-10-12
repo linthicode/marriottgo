@@ -38,9 +38,9 @@ export default function AuthProvider({ children }) {
     } catch {}
     localStorage.removeItem('mm_current_user');
     setUser(null);
-    console.debug('AuthProvider: logged out, navigating to /');
-    navigate('/');
-  };  
+    console.debug('AuthProvider: logged out, navigating to /login');
+    navigate('/login');
+  };
 
   return (
     <AuthContext.Provider value={{ user, setUser, logout }}>

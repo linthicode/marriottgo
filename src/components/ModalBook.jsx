@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from "react";
 
-const marriottRed = "#b41f3a";
+const primaryColor = "#a11d2b";
 const spaImages = [
   "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80",
   "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80",
@@ -269,83 +269,134 @@ out center 20;`;
   }, []);
 
   return (
-    <div style={{
-      width: 800,
-      minHeight: 'auto',
-      background: "#fff",
-      borderRadius: 16,
-      boxShadow: "0 4px 24px rgba(180,31,58,0.12)",
-      border: `2px solid ${marriottRed}`,
-      padding: 25,
-      position: "relative",
-      margin: "40px auto"
-    }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-        <img src={item.img} alt={item.title} style={{ width: 70, height: 70, objectFit: "cover", borderRadius: 10, border: `1.5px solid ${marriottRed}` }} />
-        <div>
-          <div style={{ color: marriottRed, fontWeight: 700, fontSize: 18 }}>{item.title}</div>
-          <div style={{ color: marriottRed, fontWeight: 500, fontSize: 13 }}>{item.subtitle}</div>
+    <div className="max-w-4xl mx-auto my-8 bg-white rounded-3xl shadow-2xl overflow-hidden">
+      {/* Hero Section */}
+      <div className="relative h-80 overflow-hidden">
+        <img 
+          src={item.img} 
+          alt={item.title} 
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+        <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
+          <h1 className="text-4xl font-bold mb-2">{item.title}</h1>
+          <p className="text-xl text-white/90">{item.subtitle}</p>
         </div>
       </div>
-      <div style={{ color: "#222", fontSize: 14, marginBottom: 10 }}>{item.desc}</div>
-      <a
-        href={item.bookUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        style={{
-          display: "inline-block",
-          background: marriottRed,
-          color: "#fff",
-          fontWeight: 700,
-          fontSize: 15,
-          border: "none",
-          borderRadius: 8,
-          padding: "8px 18px",
-          marginBottom: 14,
-          cursor: "pointer",
-          width: "100%",
-          textAlign: "center",
-          textDecoration: "none"
-        }}
-      >
-        Book Now
-      </a>
-      <div style={{ fontWeight: 700, color: marriottRed, fontSize: 16, marginBottom: 2 }}>What Are People Yappin' About?</div>
-      <div style={{ color: "#444", fontSize: 13, marginBottom: 6 }}>
-        Check out the latest buzz and real testimonies from Marriott patrons at the Desert Spa.
-      </div>
-      <div style={{ display: "flex", flexDirection: "row", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
-        {(item.testimonies || []).slice(0, 4).map((t, i) => (
-          <div key={i} style={{ background: "#fff8fa", border: `1px solid ${marriottRed}`, borderRadius: 8, padding: 6, flex: "1 1 45%", minWidth: 300 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-              <img src={t.avatar} alt={t.user} style={{ width: 24, height: 24, borderRadius: "50%", border: `1px solid ${marriottRed}` }} />
-              <span style={{ color: marriottRed, fontWeight: 600, fontSize: 12 }}>{t.user}</span>
+
+      {/* Content */}
+      <div className="p-8">
+        {/* Description */}
+        <p className="text-lg text-gray-700 leading-relaxed mb-8">{item.desc}</p>
+
+        {/* Book Now Button */}
+        <a
+          href={item.bookUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block w-full bg-gradient-to-r from-[#a11d2b] to-[#8B1523] hover:from-[#8B1523] hover:to-[#a11d2b] text-white font-bold text-lg py-4 rounded-xl text-center shadow-lg hover:shadow-xl transition-all duration-200 mb-8 no-underline"
+        >
+          <span className="flex items-center justify-center gap-2">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Book Your Stay Now
+          </span>
+        </a>
+
+        {/* Testimonials */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center gap-2">
+            <svg className="w-7 h-7 text-[#a11d2b]" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />
+              <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z" />
+            </svg>
+            What Guests Are Saying
+          </h2>
+          <p className="text-gray-600 mb-6">Real reviews from our valued guests</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {(item.testimonies || []).slice(0, 4).map((t, i) => (
+              <div key={i} className="bg-gradient-to-br from-rose-50 to-white border-2 border-[#a11d2b]/20 rounded-xl p-4 hover:shadow-lg transition-shadow">
+                <div className="flex items-center gap-3 mb-3">
+                  <img 
+                    src={t.avatar} 
+                    alt={t.user} 
+                    className="w-10 h-10 rounded-full border-2 border-[#a11d2b] object-cover" 
+                  />
+                  <span className="font-bold text-[#a11d2b]">{t.user}</span>
+                  <div className="ml-auto flex">
+                    {[...Array(5)].map((_, idx) => (
+                      <svg key={idx} className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
+                  </div>
+                </div>
+                <p className="text-gray-700 text-sm leading-relaxed">{t.comment}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Activities & Nearby */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Activities */}
+          <div>
+            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <svg className="w-6 h-6 text-[#B81843]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" />
+              </svg>
+              Activities & Amenities
+            </h3>
+            <div className="space-y-2">
+              {(item.activities || []).slice(0, 6).map((a) => (
+                <div key={a.name} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors border border-gray-200">
+                  <img 
+                    src={a.img} 
+                    alt={a.name} 
+                    className="w-12 h-12 object-cover rounded-lg border-2 border-[#a11d2b]/30" 
+                  />
+                  <div className="flex-1">
+                    <div className="font-semibold text-gray-900 text-sm">{a.name}</div>
+                    <div className="text-xs text-gray-600">{a.desc}</div>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div style={{ color: "#222", fontSize: 11 }}>{t.comment}</div>
           </div>
-        ))}
-      </div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 600, color: marriottRed, fontSize: 14, marginBottom: 4 }}>Other Activities</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-            {(item.activities || []).slice(0, 4).map((a) => (
-              <div key={a.name} style={{ display: "flex", alignItems: "center", gap: 4, background: "#fff8fa", border: `1px solid ${marriottRed}`, borderRadius: 6, padding: 3, width: "48%" }}>
-                <img src={a.img} alt={a.name} style={{ width: 20, height: 20, objectFit: "cover", borderRadius: 3, border: `1px solid ${marriottRed}` }} />
-                <span style={{ color: marriottRed, fontWeight: 500, fontSize: 11 }}>{a.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div style={{ flex: 1, marginLeft: 16 }}>
-          <div style={{ fontWeight: 600, color: marriottRed, fontSize: 14, marginBottom: 4 }}>Nearby</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-            {(item.nearby || []).slice(0, 3).map((n) => (
-              <div key={n.name} style={{ display: "flex", alignItems: "center", gap: 4, background: "#fff8fa", border: `1px solid ${marriottRed}`, borderRadius: 6, padding: 3, width: "48%" }}>
-                <img src={n.img} alt={n.name} style={{ width: 20, height: 20, objectFit: "cover", borderRadius: 3, border: `1px solid ${marriottRed}` }} />
-                <span style={{ color: marriottRed, fontWeight: 500, fontSize: 11 }}>{n.name}</span>
-              </div>
-            ))}
+
+          {/* Nearby */}
+          <div>
+            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <svg className="w-6 h-6 text-[#B81843]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Nearby Attractions
+            </h3>
+            <div className="space-y-2">
+              {(item.nearby || []).slice(0, 6).map((n) => (
+                <div key={n.name} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors border border-gray-200">
+                  {n.img ? (
+                    <img 
+                      src={n.img} 
+                      alt={n.name} 
+                      className="w-12 h-12 object-cover rounded-lg border-2 border-[#a11d2b]/30" 
+                    />
+                  ) : (
+                    <div className="w-12 h-12 bg-gradient-to-br from-[#a11d2b] to-[#8B1523] rounded-lg flex items-center justify-center">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                      </svg>
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <div className="font-semibold text-gray-900 text-sm">{n.name}</div>
+                    {n.desc && <div className="text-xs text-gray-600">{n.desc}</div>}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

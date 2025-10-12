@@ -182,28 +182,83 @@ export default function Onboarding() {
 		const currentQ = expandedQuestions[index];
 
 	return (
-		<div className="min-h-screen flex items-center justify-center bg-gray-100 p-6">
-			<div className="w-full max-w-2xl">
-				<div className="bg-white p-6 rounded-lg shadow">
-					<h2 className="text-gray-500 text-2xl font-semibold mb-2">Welcome! A quick onboarding</h2>
-					<p className="text-gray-500 mb-4">Help us personalize your experience. This will only take a moment.</p>
-
-					<div className="mb-4 text-gray-500">
-						<div className="mb-3 text-sm text-gray-600">Question {index + 1} of {expandedQuestions.length}</div>
-						<Question question={currentQ} value={answers[currentQ.id]} onChange={(v) => updateAnswer(currentQ.id, v)} />
+		<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+			<div className="w-full max-w-3xl">
+				{/* Progress Header */}
+				<div className="mb-8 text-center">
+					<div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-[#a11d2b] to-[#8B1523] text-white rounded-full shadow-lg mb-4">
+						<svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+						</svg>
 					</div>
+					<h1 className="text-4xl font-bold text-gray-900 mb-2">Welcome to MarriottGo!</h1>
+					<p className="text-lg text-gray-600">Let's personalize your experience in just a few steps</p>
+				</div>
 
-					<div className="flex justify-between items-center mt-4">
-						<button onClick={handleBack} className="px-4 py-2 text-white bg-red-500 rounded border">Back</button>
-						<div className="flex items-center gap-3">
-							<button onClick={() => {
-								// quick save to localStorage - already handled by useEffect but allow explicit
+				{/* Progress Bar */}
+				<div className="mb-8">
+					<div className="flex justify-between mb-2">
+						<span className="text-sm font-semibold text-gray-700">Step {index + 1} of {expandedQuestions.length}</span>
+						<span className="text-sm font-semibold text-[#a11d2b]">{Math.round(((index + 1) / expandedQuestions.length) * 100)}%</span>
+					</div>
+					<div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+						<div 
+							className="bg-gradient-to-r from-[#a11d2b] to-[#8B1523] h-3 rounded-full transition-all duration-300 ease-out shadow-md"
+							style={{ width: `${((index + 1) / expandedQuestions.length) * 100}%` }}
+						/>
+					</div>
+				</div>
+
+				{/* Question Card */}
+				<div className="mb-6">
+					<Question question={currentQ} value={answers[currentQ.id]} onChange={(v) => updateAnswer(currentQ.id, v)} />
+				</div>
+
+				{/* Navigation */}
+				<div className="flex justify-between items-center gap-4">
+					<button 
+						onClick={handleBack} 
+						className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all shadow-sm"
+					>
+						<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+						</svg>
+						Back
+					</button>
+					<div className="flex items-center gap-3">
+						<button 
+							onClick={() => {
 								const key = `${STORAGE_PREFIX}:${user.id}`;
 								localStorage.setItem(key, JSON.stringify(answers));
-								alert("Progress saved locally.");
-							}} className="text-sm text-gray-500">Save</button>
-							<button onClick={handleNext} className="px-4 py-2 bg-[#B81843] text-white rounded">{index < expandedQuestions.length - 1 ? 'Next' : 'Finish'}</button>
-						</div>
+								alert("Progress saved successfully!");
+							}} 
+							className="flex items-center gap-2 px-4 py-3 text-gray-600 hover:text-gray-900 font-medium transition-colors"
+						>
+							<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+							</svg>
+							Save
+						</button>
+						<button 
+							onClick={handleNext} 
+							className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-[#a11d2b] to-[#8B1523] hover:from-[#8B1523] hover:to-[#a11d2b] text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-200"
+						>
+							{index < expandedQuestions.length - 1 ? (
+								<>
+									<span>Next</span>
+									<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+									</svg>
+								</>
+							) : (
+								<>
+									<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+									</svg>
+									<span>Finish</span>
+								</>
+							)}
+						</button>
 					</div>
 				</div>
 			</div>
