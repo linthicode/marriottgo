@@ -1,26 +1,60 @@
 import React, { useState } from "react";
+import supabase  from "../helper/supabaseClient";
 import { Link, useNavigate } from "react-router-dom";
 
 
 export default function Login() {
-    const [mode, setMode] = useState("login"); // "login" | "signup"
+    const [mode, setMode] = useState("login"); 
     const navigate = useNavigate();
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [message, setMessage] = useState("");
+    const [username, setUsername] = useState('');
 
-    function handleSubmit(e) {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Demo auth: create a small user in localStorage.
-        // For signup, we want to send the user to onboarding because we don't know them yet.
-        const isSignup = mode === "signup";
-        const demoUser = {
-            id: isSignup ? `u_${Date.now()}` : "u_dev",
-            email: document.getElementById("email").value || "dev@example.com",
-            onboarded: !isSignup, // logged-in users are treated as already onboarded for dev flow
-        };
-        localStorage.setItem("mm_current_user", JSON.stringify(demoUser));
+        setMessage("");
 
-        if (isSignup) navigate("/onboarding");
-        else navigate("/dashboard");
-    }
+        if (mode === "signup") {
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password,
+                options: { data: { username } }
+            });
+
+            if (error) {
+                setMessage(error.message);
+                return;
+            }
+
+            if (data) {
+                setMessage("User account created!");
+                setEmail("");
+                setPassword("");
+                setUsername("");
+                navigate("/onboarding");
+                return;
+            }
+        } else {
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
+
+            if (error) {
+                setMessage(error.message);
+                return;
+            }
+
+            if (data) {
+                setMessage("");
+                setEmail("");
+                setPassword("");
+                navigate("/dashboard");
+                return;
+            }
+        }
+    };
 
 return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
@@ -34,7 +68,6 @@ return (
         </div>
 
         <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md text-gray-500">
-            
             {/* Login / Signup Toggle */}
             <div className="flex justify-center items-center gap-3 mb-4">
                 <span
@@ -77,25 +110,31 @@ return (
                         type="text"
                         placeholder="Username"
                         className="w-full border rounded px-3 py-2"
+                        required
+                        onChange={(e) => setUsername(e.target.value)}
+                        value={username}
                     />
                 )}
-
                 <input
                     id="email"
                     type="email"
                     placeholder="you@example.com"
                     className="w-full border rounded px-3 py-2"
-                    defaultValue="dev@example.com"
+                    required
+                    onChange={(e) => setEmail(e.target.value)}
+                    value={email}
                 />
-
+                <br></br>
+                {message && <span className="text-sm text-red-500 mb-2">{message}</span>}
                 <input
                     id="password"
                     type="password"
-                    placeholder="password"
+                    placeholder="Password"
                     className="w-full border rounded px-3 py-2"
-                    defaultValue="password"
+                    required
+                    onChange={(e) => setPassword(e.target.value)}
+                    value={password}
                 />
-
                 <button className="w-full bg-[#B81843] text-white py-2 rounded">
                     {mode === "login" ? "Log in" : "Create account"}
                 </button>

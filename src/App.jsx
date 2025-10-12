@@ -10,8 +10,7 @@ export default function App() {
         <Route path="/" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/onboarding" element={<Onboarding />} />
-        {/* fallback - redirect unknown routes to login */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        
       </Routes>
     </BrowserRouter>
   );
