@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 function fmtDate(ts) {
   try {
@@ -15,6 +16,7 @@ function fmtDate(ts) {
 }
 
 export default function PostCard({ post }) {
+  const navigate = useNavigate();
   const sample = post || {
     id: "1",
     hotelName: "Marriot Hotel",
@@ -35,9 +37,28 @@ export default function PostCard({ post }) {
     ? [sample.photos]
     : [];
   const dummyImage = photos[0] || "/images/dummy.jpg";
+  const hasPhoto = !!photos[0];
+  function initials(name) {
+    if (!name) return "";
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  function titleCase(str) {
+    if (!str) return "";
+    return str
+      .toString()
+      .split(/\s+/)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(" ");
+  }
   const hotelName = sample.hotelName || "Hotel";
   // prefer hotelAddress when available for subheading
   const hotelAddress = sample.hotelAddress || sample.hotelName || "";
+  const experienceTitle = sample.experienceTitle || hotelName;
+  const eventAddress = sample.address || sample.location || "";
+  const displayTitle = titleCase(experienceTitle);
+  const bookUrl = sample.bookUrl;
   const activityTags = Array.isArray(sample.activityTags)
     ? sample.activityTags
     : [];
@@ -49,7 +70,21 @@ export default function PostCard({ post }) {
 
   const handleHotelNameClick = () => {
     window.dispatchEvent(
-      new CustomEvent("openModalBook", { detail: { hotelName } })
+      new CustomEvent("openModalBook", {
+        detail: {
+          hotelName,
+          title: experienceTitle,
+          subtitle: sample.user?.location || hotelName,
+          img: photos[0] || undefined,
+          desc: caption || undefined,
+          bookUrl: sample.bookUrl || undefined,
+          activities: sample.activities || undefined,
+          nearby: sample.nearby || undefined,
+            address: eventAddress || undefined,
+            experienceTitle: experienceTitle,
+          testimonies: sample.testimonies || undefined,
+        },
+      })
     );
   };
 
@@ -73,35 +108,33 @@ export default function PostCard({ post }) {
           justifyContent: "space-between",
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <span
             onClick={handleHotelNameClick}
             style={{
               color: marriottRed,
               fontWeight: 700,
-              fontSize: 24,
+              fontSize: 20,
               textDecoration: "none",
               lineHeight: 1.1,
               cursor: "pointer",
             }}
           >
+            {displayTitle}
+          </span>
+          <span
+            style={{
+              color: marriottRed,
+              fontWeight: 500,
+              fontSize: 16,
+              marginTop: 0,
+            }}
+          >
             {hotelName}
           </span>
-          {hotelAddress && (
-            <span
-              style={{
-                color: marriottRed,
-                fontWeight: 500,
-                fontSize: 16,
-                marginTop: 0,
-              }}
-            >
-              {hotelAddress}
-            </span>
-          )}
         </div>
 
-        {userHandle && pfpImage && (
+        {userHandle && (
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span
               style={{
@@ -113,43 +146,62 @@ export default function PostCard({ post }) {
               @{userHandle}
             </span>
             <div style={{ position: "relative", display: "inline-block" }}>
-              <img
-                src={pfpImage}
-                alt="Profile"
-                style={{
+              {pfpImage ? (
+                <img
+                  src={pfpImage}
+                  alt={userHandle}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: "50%",
+                    border: `2.5px solid ${marriottRed}`,
+                    objectFit: "cover",
+                  }}
+                />
+              ) : (
+                <div style={{
                   width: 40,
                   height: 40,
                   borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "#fff8fa",
                   border: `2.5px solid ${marriottRed}`,
-                  objectFit: "cover",
-                }}
-              />
+                  color: marriottRed,
+                  fontWeight: 700,
+                }}>
+                  {initials(userHandle)}
+                </div>
+              )}
             </div>
           </div>
         )}
       </div>
 
       {/* Experience Image */}
-      <div
-        style={{
-          marginTop: 18,
-          width: "calc(100% + 56px)",
-          marginLeft: -28,
-          marginRight: -28,
-        }}
-      >
-        <img
-          src={dummyImage}
-          alt="Experience"
+      {hasPhoto && (
+        <div
           style={{
-            width: "100%",
-            height: "auto",
-            display: "block",
-            objectFit: "contain",
-            borderRadius: "0px 0px 0px 0px",
+            marginTop: 18,
+            width: "calc(100% + 56px)",
+            marginLeft: -28,
+            marginRight: -28,
           }}
-        />
-      </div>
+        >
+          <img
+            src={dummyImage}
+            alt={hotelName}
+            style={{
+              width: "100%",
+              height: "auto",
+              display: "block",
+              objectFit: "cover",
+              borderRadius: "0px 0px 0px 0px",
+            }}
+          />
+        </div>
+      )}
 
       {/* Date and Activity Tag below image, aligned */}
       <div
@@ -207,6 +259,25 @@ export default function PostCard({ post }) {
         }}
       >
         {caption}
+      </div>
+      <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end" }}>
+        {bookUrl ? (
+          <button
+            onClick={() => {
+              // dispatch details to the modal then navigate to route
+              window.dispatchEvent(new CustomEvent("openModalBook", { detail: { hotelName, experienceTitle, img: photos[0], desc: caption, bookUrl, activities: sample.activities, nearby: sample.nearby, address: eventAddress } }));
+              try { navigate('/ModalBook'); } catch {}
+            }}
+            className="px-4 py-2 rounded"
+            style={{ background: marriottRed, color: "#fff", fontWeight: 700, border: 'none' }}
+          >
+            {`Book at ${hotelName}`}
+          </button>
+        ) : (
+          <button className="px-4 py-2 rounded" disabled style={{ background: "#ddd", color: "#666", fontWeight: 700 }}>
+            {`Book at ${hotelName}`}
+          </button>
+        )}
       </div>
     </div>
   );

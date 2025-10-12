@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 const marriottRed = "#b41f3a";
 const spaImages = [
@@ -140,6 +140,134 @@ const nearby = [
 ];
 
 export default function ModalBook() {
+  const [item, setItem] = useState({
+    title: "The Desert Spa",
+    subtitle: "at JW Marriott",
+    img: spaImages[0],
+    desc: "A sanctuary of tranquility offering massages, aromatherapy, and more. Perfect for anyone seeking relaxation and luxury in the desert.",
+    bookUrl: "https://www.marriott.com/en-us/hotels/ctdca-jw-marriott-desert-springs-resort-and-spa/overview/",
+    testimonies,
+    activities,
+    nearby,
+  });
+
+  useEffect(() => {
+    function handler(e) {
+      const d = (e && e.detail) || {};
+      setItem((prev) => ({
+        ...prev,
+        title: d.hotelName || d.title || prev.title,
+        subtitle: d.subtitle || prev.subtitle,
+        img: d.img || prev.img,
+        desc: d.desc || prev.desc,
+        bookUrl: d.bookUrl || prev.bookUrl,
+        testimonies: d.testimonies || prev.testimonies,
+        activities: d.activities || prev.activities,
+        nearby: d.nearby || prev.nearby,
+      }));
+
+      // If the event contained an address or location, attempt to fetch nearby POIs
+      const address = d.address || d.location || d.addressString;
+      const lat = d.lat;
+      const lon = d.lon;
+      if (address || (lat && lon)) {
+        // run async fetch (fire-and-forget)
+        (async () => {
+          try {
+            const geocacheKey = `geo_cache:${address || `${lat},${lon}`}`;
+            const cached = (() => {
+              try {
+                const raw = localStorage.getItem(geocacheKey);
+                if (!raw) return null;
+                const parsed = JSON.parse(raw);
+                // TTL 24 hours
+                if (Date.now() - (parsed.ts || 0) > 24 * 60 * 60 * 1000) return null;
+                return parsed;
+              } catch { return null; }
+            })();
+
+            let center = null;
+            if (cached && cached.center) center = cached.center;
+            else {
+              if (lat && lon) center = { lat, lon };
+              else {
+                // geocode via Nominatim
+                const q = encodeURIComponent(address || "");
+                const nomUrl = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${q}`;
+                const nomRes = await fetch(nomUrl, { headers: { "Accept": "application/json" } });
+                const nomJson = await nomRes.json();
+                if (Array.isArray(nomJson) && nomJson.length > 0) {
+                  center = { lat: parseFloat(nomJson[0].lat), lon: parseFloat(nomJson[0].lon) };
+                }
+              }
+              if (center) {
+                try { localStorage.setItem(geocacheKey, JSON.stringify({ ts: Date.now(), center })); } catch {}
+              }
+            }
+
+            if (!center) return;
+
+            // Overpass: search for common POI types near the location within radius
+            const radius = 2000; // meters
+            // query for tourism, leisure, amenity, historic, shop, sport, entertainment
+            const overpassQuery = `[
+out:json][timeout:25];(
+  node(around:${radius},${center.lat},${center.lon})["tourism"];
+  way(around:${radius},${center.lat},${center.lon})["tourism"];
+  node(around:${radius},${center.lat},${center.lon})["leisure"];
+  way(around:${radius},${center.lat},${center.lon})["leisure"];
+  node(around:${radius},${center.lat},${center.lon})["amenity"];
+  way(around:${radius},${center.lat},${center.lon})["amenity"];
+  node(around:${radius},${center.lat},${center.lon})["historic"];
+  way(around:${radius},${center.lat},${center.lon})["historic"];
+  node(around:${radius},${center.lat},${center.lon})["shop"];
+  way(around:${radius},${center.lat},${center.lon})["shop"];
+  node(around:${radius},${center.lat},${center.lon})["sport"];
+  way(around:${radius},${center.lat},${center.lon})["sport"];
+);
+out center 20;`;
+
+            const overpassUrl = `https://overpass-api.de/api/interpreter`;
+            const overpassRes = await fetch(overpassUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+              body: `data=${encodeURIComponent(overpassQuery)}`,
+            });
+            const overpassJson = await overpassRes.json();
+            const elements = overpassJson.elements || [];
+
+            // Map elements to simplified nearby items and dedupe by name
+            const mapped = [];
+            const seen = new Set();
+            for (const el of elements) {
+              const tags = el.tags || {};
+              const name = tags.name || tags['brand'] || tags['operator'] || tags['amenity'] || tags['tourism'] || tags['leisure'] || tags['shop'] || ('poi-' + (el.id || ''));
+              if (!name) continue;
+              if (seen.has(name)) continue;
+              seen.add(name);
+              const latE = el.lat || (el.center && el.center.lat);
+              const lonE = el.lon || (el.center && el.center.lon);
+              const dist = latE && lonE && center ? Math.sqrt(Math.pow((latE - center.lat), 2) + Math.pow((lonE - center.lon),2)) : null;
+              mapped.push({ name, img: null, desc: tags['description'] || tags['note'] || '', lat: latE, lon: lonE, distance: dist });
+              if (mapped.length >= 8) break;
+            }
+
+            // cache results
+            try { localStorage.setItem(geocacheKey, JSON.stringify({ ts: Date.now(), center, results: mapped })); } catch {}
+
+            // update modal item nearby
+            setItem((prev) => ({ ...prev, nearby: mapped }));
+          } catch (err) {
+            console.error('Nearby fetch error', err);
+          }
+        })();
+      }
+    }
+
+    window.addEventListener("openModalBook", handler);
+    return () => window.removeEventListener("openModalBook", handler);
+  }, []);
+
   return (
     <div style={{
       width: 800,
@@ -153,17 +281,15 @@ export default function ModalBook() {
       margin: "40px auto"
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-        <img src={spaImages[0]} alt="Desert Spa" style={{ width: 70, height: 70, objectFit: "cover", borderRadius: 10, border: `1.5px solid ${marriottRed}` }} />
+        <img src={item.img} alt={item.title} style={{ width: 70, height: 70, objectFit: "cover", borderRadius: 10, border: `1.5px solid ${marriottRed}` }} />
         <div>
-          <div style={{ color: marriottRed, fontWeight: 700, fontSize: 18 }}>The Desert Spa</div>
-          <div style={{ color: marriottRed, fontWeight: 500, fontSize: 13 }}>at JW Marriott</div>
+          <div style={{ color: marriottRed, fontWeight: 700, fontSize: 18 }}>{item.title}</div>
+          <div style={{ color: marriottRed, fontWeight: 500, fontSize: 13 }}>{item.subtitle}</div>
         </div>
       </div>
-      <div style={{ color: "#222", fontSize: 14, marginBottom: 10 }}>
-        A sanctuary of tranquility offering massages, aromatherapy, and more. Perfect for anyone seeking relaxation and luxury in the desert.
-      </div>
+      <div style={{ color: "#222", fontSize: 14, marginBottom: 10 }}>{item.desc}</div>
       <a
-        href="https://www.marriott.com/en-us/hotels/ctdca-jw-marriott-desert-springs-resort-and-spa/overview/"
+        href={item.bookUrl}
         target="_blank"
         rel="noopener noreferrer"
         style={{
@@ -189,7 +315,7 @@ export default function ModalBook() {
         Check out the latest buzz and real testimonies from Marriott patrons at the Desert Spa.
       </div>
       <div style={{ display: "flex", flexDirection: "row", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
-        {testimonies.slice(0, 4).map((t, i) => (
+        {(item.testimonies || []).slice(0, 4).map((t, i) => (
           <div key={i} style={{ background: "#fff8fa", border: `1px solid ${marriottRed}`, borderRadius: 8, padding: 6, flex: "1 1 45%", minWidth: 300 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
               <img src={t.avatar} alt={t.user} style={{ width: 24, height: 24, borderRadius: "50%", border: `1px solid ${marriottRed}` }} />
@@ -203,7 +329,7 @@ export default function ModalBook() {
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 600, color: marriottRed, fontSize: 14, marginBottom: 4 }}>Other Activities</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-            {activities.slice(0, 4).map((a) => (
+            {(item.activities || []).slice(0, 4).map((a) => (
               <div key={a.name} style={{ display: "flex", alignItems: "center", gap: 4, background: "#fff8fa", border: `1px solid ${marriottRed}`, borderRadius: 6, padding: 3, width: "48%" }}>
                 <img src={a.img} alt={a.name} style={{ width: 20, height: 20, objectFit: "cover", borderRadius: 3, border: `1px solid ${marriottRed}` }} />
                 <span style={{ color: marriottRed, fontWeight: 500, fontSize: 11 }}>{a.name}</span>
@@ -214,7 +340,7 @@ export default function ModalBook() {
         <div style={{ flex: 1, marginLeft: 16 }}>
           <div style={{ fontWeight: 600, color: marriottRed, fontSize: 14, marginBottom: 4 }}>Nearby</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-            {nearby.slice(0, 3).map((n) => (
+            {(item.nearby || []).slice(0, 3).map((n) => (
               <div key={n.name} style={{ display: "flex", alignItems: "center", gap: 4, background: "#fff8fa", border: `1px solid ${marriottRed}`, borderRadius: 6, padding: 3, width: "48%" }}>
                 <img src={n.img} alt={n.name} style={{ width: 20, height: 20, objectFit: "cover", borderRadius: 3, border: `1px solid ${marriottRed}` }} />
                 <span style={{ color: marriottRed, fontWeight: 500, fontSize: 11 }}>{n.name}</span>
