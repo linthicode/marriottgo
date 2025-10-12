@@ -250,6 +250,29 @@ export default function ModalPost({ hotels = HOTELS, onCancel, onCreate, prefill
         return;
       }
 
+      // Call backend API to update user embeddings
+      try {
+        const response = await fetch('http://localhost:5000/events/post-created', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            post_id: data.id
+          })
+        });
+
+        if (!response.ok) {
+          console.warn('Failed to update user embeddings:', response.statusText);
+          // Don't fail the post creation if embedding update fails
+        } else {
+          console.log('User embeddings updated successfully');
+        }
+      } catch (embeddingError) {
+        console.warn('Error updating user embeddings:', embeddingError);
+        // Don't fail the post creation if embedding update fails
+      }
+
       // Transform Supabase response back to frontend format for compatibility
       const post = {
         id: data.id,

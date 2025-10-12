@@ -34,6 +34,12 @@ export default function Login() {
                 setMessage("User account created!");
                 // set global user from supabase response
                 setUser(data.user ?? null);
+                
+                // Store user in localStorage for onboarding
+                if (data.user) {
+                    localStorage.setItem("mm_current_user", JSON.stringify(data.user));
+                }
+                
                 setEmail("");
                 setPassword("");
                 setUsername("");
@@ -55,6 +61,12 @@ export default function Login() {
                 setMessage("");
                 // set global user and navigate
                 setUser(data.user ?? null);
+                
+                // Store user in localStorage for consistency
+                if (data.user) {
+                    localStorage.setItem("mm_current_user", JSON.stringify(data.user));
+                }
+                
                 setEmail("");
                 setPassword("");
                 navigate("/dashboard");

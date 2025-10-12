@@ -52,7 +52,11 @@ def on_post_created():
     user_id = post["user_id"]
     user_embedding = get_user_embedding(user_id)
     if user_embedding is None:
-        return jsonify({"error": "no user embeddings found"}), 404
+        # Create default embeddings for new users who haven't completed onboarding
+        print(f"No embeddings found for user {user_id}, creating default embeddings")
+        default_embedding = [0.5] * 13  # Default neutral preferences
+        set_user_embedding(user_id, default_embedding)
+        user_embedding = default_embedding
 
     # Build location vector from the post's activity_tags
     loc_vec = tags_to_vector(post.get("activity_tags"))
@@ -87,7 +91,11 @@ def recs_from_post(post_id):
     user_id = post["user_id"]
     user_embedding = get_user_embedding(user_id)
     if user_embedding is None:
-        return jsonify({"error": "no user embeddings found"}), 404
+        # Create default embeddings for new users who haven't completed onboarding
+        print(f"No embeddings found for user {user_id}, creating default embeddings")
+        default_embedding = [0.5] * 13  # Default neutral preferences
+        set_user_embedding(user_id, default_embedding)
+        user_embedding = default_embedding
 
     posts_count = get_user_posts_count(user_id)
 

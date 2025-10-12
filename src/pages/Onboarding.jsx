@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Question from "../components/Question";
+import { createOrUpdateProfile } from "../api/profiles";
 
 const STORAGE_PREFIX = "mm_onboarding_v1";
 
@@ -50,6 +51,13 @@ export default function Onboarding() {
 			if (!raw) return navigate("/");
 			const parsed = JSON.parse(raw);
 			setUser(parsed);
+
+			// Check if user has already completed onboarding
+			if (parsed.onboarded) {
+				console.log('User has already completed onboarding, redirecting to dashboard');
+				navigate("/dashboard");
+				return;
+			}
 
 			// load saved answers for this user
 			const key = `${STORAGE_PREFIX}:${parsed.id}`;
@@ -121,13 +129,13 @@ export default function Onboarding() {
 		else navigate(-1);
 	}
 
-	function handleSubmit() {
-		// In a real app, POST answers to server. For now, mark user as onboarded locally.
-		const updated = { ...(user || {}), onboarded: true };
-		localStorage.setItem("mm_current_user", JSON.stringify(updated));
-
-		// Build a scores array length 14 (indices 0..13) from interest ratings.
-		// Assumption: the interests map to indices in this order (0..12). Index 13 is reserved for future/other.
+	async function handleSubmit() {
+		console.log("=== ONBOARDING SUBMIT DEBUG ===");
+		console.log("User:", user);
+		console.log("Answers:", answers);
+		
+		// Build a scores array length 13 (indices 0..12) from interest ratings.
+		// Assumption: the interests map to indices in this order (0..12).
 		const INTEREST_INDEX = {
 			"nature": 0,
 			"museums": 1,
@@ -142,11 +150,12 @@ export default function Onboarding() {
 			"adult": 10,
 			"shops": 11,
 			"foods": 12,
-			// 13 reserved for 'other' or future categories
 		};
-		{/*onboarding array */}
+		
 		const scores = new Array(13).fill(0);
 		const ratings = answers["q2_ratings"] || {};
+
+		console.log("Interest ratings:", ratings);
 
 		function ratingToValue(r) {
 			switch ((r || "").toLowerCase()) {
@@ -168,12 +177,60 @@ export default function Onboarding() {
 			}
 		});
 
-		// optionally store final answers and computed scores under a dedicated key
-		localStorage.setItem(`mm_onboarding_result:${user.id}`, JSON.stringify({ answers, scores, submittedAt: Date.now() }));
-
 		// Debug: print scores array to console so developers can verify mapping
-		console.log("onboarding scores:", scores);
+		console.log("Calculated embeddings:", scores);
+		console.log("User ID:", user.id);
+		console.log("User ID type:", typeof user.id);
 
+		// Validate user ID
+		if (!user || !user.id) {
+			console.error("No user ID found! User:", user);
+			alert("Error: No user ID found. Please try logging in again.");
+			return;
+		}
+
+		try {
+			// Save user profile with embeddings to Supabase
+			console.log("Attempting to save profile to Supabase...");
+			const { data: profileData, error: profileError } = await createOrUpdateProfile(
+				user.id,
+				scores,
+				0 // Initial posts count
+			);
+
+			if (profileError) {
+				console.error("Failed to save profile to Supabase:", profileError);
+				console.error("Profile error details:", {
+					message: profileError.message,
+					details: profileError.details,
+					hint: profileError.hint,
+					code: profileError.code
+				});
+				
+				// Show user-friendly error message
+				alert(`Failed to save profile: ${profileError.message}. Please try again.`);
+				return;
+			} else {
+				console.log("Profile saved successfully:", profileData);
+			}
+		} catch (error) {
+			console.error("Unexpected error saving profile:", error);
+			alert(`Unexpected error: ${error.message}. Please try again.`);
+			return;
+		}
+
+		// Store final answers and computed scores locally
+		localStorage.setItem(`mm_onboarding_result:${user.id}`, JSON.stringify({ 
+			answers, 
+			scores, 
+			submittedAt: Date.now() 
+		}));
+
+		// Mark user as onboarded locally
+		const updated = { ...(user || {}), onboarded: true };
+		localStorage.setItem("mm_current_user", JSON.stringify(updated));
+
+		console.log("Onboarding completed successfully!");
 		navigate("/dashboard");
 	}
 

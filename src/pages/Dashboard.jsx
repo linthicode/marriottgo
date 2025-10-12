@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import PostCard from "../components/PostCard";
 import ModalPost from "../components/ModalPost";
@@ -7,6 +8,7 @@ import { getPosts } from "../api/posts";
 const KEY = "mm_posts_v1";
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [showPostModal, setShowPostModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [posts, setPosts] = useState([]);
@@ -39,6 +41,23 @@ export default function Dashboard() {
     setSelectedRating(0);
     setSortBy('newest');
   };
+
+  // Check if user needs to complete onboarding
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("mm_current_user");
+      if (raw) {
+        const user = JSON.parse(raw);
+        if (!user.onboarded) {
+          console.log('User has not completed onboarding, redirecting to onboarding');
+          navigate("/onboarding");
+          return;
+        }
+      }
+    } catch (e) {
+      console.error('Error checking onboarding status:', e);
+    }
+  }, [navigate]);
 
   // Fetch posts from Supabase
   useEffect(() => {

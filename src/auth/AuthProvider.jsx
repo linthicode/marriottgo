@@ -14,6 +14,22 @@ export default function AuthProvider({ children }) {
       try {
         const { data } = await supabase.auth.getUser();
         if (!mounted) return;
+        
+        // If no user from Supabase, check localStorage for onboarding flow
+        if (!data?.user) {
+          const storedUser = localStorage.getItem('mm_current_user');
+          if (storedUser) {
+            try {
+              const parsedUser = JSON.parse(storedUser);
+              setUser(parsedUser);
+              console.debug('AuthProvider: using stored user for onboarding', parsedUser);
+              return;
+            } catch (e) {
+              console.warn('AuthProvider: failed to parse stored user', e);
+            }
+          }
+        }
+        
         setUser(data?.user ?? null);
         console.debug('AuthProvider: initial user', data?.user ?? null);
       } catch (err) {

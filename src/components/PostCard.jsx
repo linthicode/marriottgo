@@ -109,6 +109,7 @@ export default function PostCard({ post }) {
     window.dispatchEvent(
       new CustomEvent("openModalBook", {
         detail: {
+          postId: sample.id,
           hotelName,
           title: experienceTitle,
           subtitle: sample.user?.location || hotelName,
@@ -235,7 +236,7 @@ export default function PostCard({ post }) {
         <div className="pt-4 border-t border-gray-100">
           <button
             onClick={() => {
-              window.dispatchEvent(new CustomEvent("openModalBook", { detail: { hotelName, experienceTitle, img: photos[0], desc: caption, bookUrl, activities: sample.activities, nearby: sample.nearby, address: eventAddress } }));
+              window.dispatchEvent(new CustomEvent("openModalBook", { detail: { postId: sample.id, hotelName, experienceTitle, img: photos[0], desc: caption, bookUrl, activities: sample.activities, nearby: sample.nearby, address: eventAddress } }));
               try { navigate('/ModalBook'); } catch {}
             }}
             className="w-full bg-gradient-to-r from-[#a11d2b] to-[#8B1523] hover:from-[#8B1523] hover:to-[#a11d2b] text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2"

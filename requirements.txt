@@ -1,0 +1,9 @@
+supabase==2.22.0
+flask==3.0.3
+flask-cors==6.0.1
+numpy==1.26.4
+pandas==2.1.4
+scikit-learn==1.5.1
+transformers==4.57.0
+torch==2.8.0+cu126
+requests==2.32.3
