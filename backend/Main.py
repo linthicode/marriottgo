@@ -2,6 +2,8 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import numpy as np
+import json
+import traceback
 from location_data import LocationDataset
 from get_recs import Recs
 from db import (
@@ -24,9 +26,37 @@ ACTIVITY_TYPES = [
 ]
 
 def tags_to_vector(tags):
-    """Convert post.activity_tags (list[str]) -> 13-dim binary vector."""
-    tags = [t.lower() for t in (tags or [])]
-    return np.array([1 if t in tags else 0 for t in ACTIVITY_TYPES], dtype=float)
+    """Convert post.activity_tags (list[str] or string) -> 13-dim binary vector.
+
+    Accepts:
+      - list/tuple of strings
+      - a JSON string representation of a list
+      - comma-separated string like "nature,shops"
+      - None
+    Returns a numpy float array length 13.
+    """
+    try:
+        if not tags:
+            tags_list = []
+        elif isinstance(tags, (list, tuple)):
+            tags_list = [str(t).lower() for t in tags if t]
+        elif isinstance(tags, str):
+            # try JSON decode first
+            try:
+                parsed = json.loads(tags)
+                if isinstance(parsed, (list, tuple)):
+                    tags_list = [str(t).lower() for t in parsed if t]
+                else:
+                    # fallback to comma-split
+                    tags_list = [t.strip().lower() for t in tags.split(",") if t.strip()]
+            except Exception:
+                tags_list = [t.strip().lower() for t in tags.split(",") if t.strip()]
+        else:
+            tags_list = []
+    except Exception:
+        tags_list = []
+
+    return np.array([1 if t in tags_list else 0 for t in ACTIVITY_TYPES], dtype=float)
 
 
 # 1) Called after a post is created to update the user's embedding
@@ -45,22 +75,65 @@ def on_post_created():
     if not post_id:
         return jsonify({"error": "post_id is required"}), 400
 
-    post = get_post_core(post_id)
-    if not post:
-        return jsonify({"error": "post not found"}), 404
+    # If the webhook provided a full record payload, prefer that over fetching again
+    post = None
+    if "record" in data and isinstance(data["record"], dict):
+        post = data["record"]
 
-    user_id = post["user_id"]
+    if post is None:
+        post = get_post_core(post_id)
+        if not post:
+            return jsonify({"error": "post not found"}), 404
+
+    user_id = post.get("user_id")
+    if not user_id:
+        return jsonify({"error": "post missing user_id"}), 400
     user_embedding = get_user_embedding(user_id)
-    if user_embedding is None:
+    # Normalize and validate user embeddings; ensure a 13-dim float list
+    def _validate_embedding(e):
+        if e is None:
+            return None
+        try:
+            # If it's a JSON string, parse it
+            if isinstance(e, str):
+                try:
+                    e_parsed = json.loads(e)
+                    e = e_parsed
+                except Exception:
+                    # try to strip brackets and split
+                    cleaned = e.strip().lstrip("[").rstrip("]")
+                    parts = [p.strip() for p in cleaned.split(",") if p.strip()]
+                    e = parts
+
+            arr = np.array(e, dtype=float)
+            if arr.size != len(ACTIVITY_TYPES):
+                return None
+            return arr.tolist()
+        except Exception:
+            return None
+
+    validated = _validate_embedding(user_embedding)
+    if validated is None:
         # Create default embeddings for new users who haven't completed onboarding
-        print(f"No embeddings found for user {user_id}, creating default embeddings")
-        default_embedding = [0.5] * 13  # Default neutral preferences
+        print(f"No valid embeddings found for user {user_id}, creating default embeddings")
+        default_embedding = [0.5] * len(ACTIVITY_TYPES)  # Default neutral preferences
         set_user_embedding(user_id, default_embedding)
         user_embedding = default_embedding
+    else:
+        user_embedding = validated
 
-    # Build location vector from the post's activity_tags
+    # Build location vector from the post's activity_tags (robust parsing)
     loc_vec = tags_to_vector(post.get("activity_tags"))
+
+    # Normalize rating to an integer 0-5 if present
     rating = post.get("rating")  # may be None
+    try:
+        if rating is not None:
+            # Handles strings like "5" or floats
+            rating = int(float(rating))
+            rating = max(0, min(5, rating))
+    except Exception:
+        rating = None
 
     # Initialize Recs with user embedding for updating preferences
     rec = Recs(user_embedding=user_embedding, init_full=False)
@@ -69,16 +142,43 @@ def on_post_created():
     if rating is None:
         text = (post.get("caption") or post.get("experience_title") or "").strip()
         if text:
-            sentiment_result = rec.sentiment_to_rating(text)
-            rating = sentiment_result.get('rating', 3)  # Default to neutral if sentiment fails
+            try:
+                sentiment_result = rec.sentiment_to_rating(text)
+                rating = int(sentiment_result.get('rating', 3))  # Default to neutral if sentiment fails
+            except Exception:
+                print("Sentiment analysis failed:")
+                traceback.print_exc()
+                rating = 3
         else:
             rating = 3  # Default neutral rating
 
-    # Update user embedding based on this experience
-    new_embedding = rec.update_user_embedding(loc_vec, rating)
-    set_user_embedding(user_id, list(map(float, new_embedding)))
+    # Safeguard rating bounds
+    try:
+        rating = int(rating)
+    except Exception:
+        rating = 3
+    rating = max(0, min(5, rating))
 
-    return jsonify({"ok": True, "user_id": user_id, "post_id": post_id})
+    # Update user embedding based on this experience
+    try:
+        new_embedding = rec.update_user_embedding(loc_vec, rating)
+        # Ensure we always persist a list of floats
+        new_embedding_list = list(map(float, new_embedding))
+        print(f"Computed new embedding for user {user_id}: {new_embedding_list}")
+        resp = set_user_embedding(user_id, new_embedding_list)
+        print(f"set_user_embedding response for user {user_id}: {resp}")
+    except Exception:
+        print(f"Failed to update embedding for user {user_id} on post {post_id}:")
+        traceback.print_exc()
+        return jsonify({"error": "failed to update embedding"}), 500
+
+    return jsonify({
+        "ok": True,
+        "user_id": user_id,
+        "post_id": post_id,
+        "new_embedding": new_embedding_list,
+        "supabase_response": resp
+    })
 
 
 # 2) When the user clicks "Book" on a specific post → recommend places near that post

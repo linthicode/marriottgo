@@ -89,39 +89,28 @@ class Recs:
     def update_user_embedding(self, location_vector, rating):
         """
         Updates the user embedding based on their experience rating at a location.
-
-        Parameters:
-        - user_embedding: np.array, current user feature vector
-        - location_vector: np.array, feature vector for the visited location
-        - rating: int, user rating (0–5)
-
-        Returns:
-        - np.array: updated user embedding
         """
+        # --- Coerce to float arrays ---
+        u = np.asarray(self.__user_embedding, dtype=float)
+        v = np.asarray(location_vector, dtype=float)
+
+        if u.shape != v.shape:
+            raise ValueError(f"location_vector length {v.shape[0]} must equal user_embedding length {u.shape[0]}")
 
         # Rating dictionary → sentiment scale
-        diction = {
-            5: 1.0,
-            4: 0.75,
-            3: 0.5,
-            2: -0.5,
-            1: -1.0,
-            0: 0.0
-        }
+        diction = {5: 1.0, 4: 0.75, 3: 0.5, 2: -0.5, 1: -1.0, 0: 0.0}
 
-        # Hyperparameter controlling how fast preferences change
         beta = 0.1
+        sentiment_score = 0.1 + 0.9 * diction[int(rating)]  # ensure int
 
-        # Scale the influence of rating
-        sentiment_score = 0.1 + 0.9 * diction[rating]
-
-        # Update user embedding using exponential moving average
-        new_user_embedding = (1 - beta) * self.__user_embedding + beta * sentiment_score * location_vector
+        # Exponential moving average update
+        new_user_embedding = (1 - beta) * u + beta * sentiment_score * v
 
         # Keep values between 0 and 1
         new_user_embedding = np.clip(new_user_embedding, 0, 1)
 
-        return new_user_embedding
+        # Persist the update if you want the object to keep it
+        self.__user_embedding = new_user_embedding
 
     def sentiment_to_rating(self, text):
         # Split text into sentences
@@ -173,3 +162,6 @@ class Recs:
         df = df.copy()
         df["Rating"] = ratings
         return df
+
+    def get_userembeddings(self):
+        return self.__user_embedding
