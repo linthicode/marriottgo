@@ -104,7 +104,7 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
   const [hoverRating, setHoverRating] = useState(0);
   // Address should represent the event/attraction location (not the hotel's address)
   const [address, setAddress] = useState("");
-  const [errors, setErrors] = useState({ title: "", address: "" });
+  const [errors, setErrors] = useState({ title: "", address: "", hotel: "", activities: "" });
   const [addressCoords, setAddressCoords] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
@@ -112,6 +112,8 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
   const debounceRef = useRef(null);
   const titleRef = useRef();
   const addressRef = useRef();
+  const hotelRef = useRef();
+  const activitySelectRef = useRef();
   const fileInputRef = useRef();
 
   const closeToDashboard = () => {
@@ -161,6 +163,8 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
     setAddress(val);
     setAddressCoords(null);
     setShowSuggestions(Boolean(val));
+    // clear address error while typing
+    setErrors((prev) => ({ ...prev, address: "" }));
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => fetchAddressSuggestions(val), 350);
   };
@@ -176,16 +180,27 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
   const onDone = (e) => {
     e.preventDefault();
     // validate required fields
-    const nextErrors = { title: "", address: "" };
+    const nextErrors = { title: "", address: "", hotel: "", activities: "" };
+    if (!hotelId || hotelId === 'none') nextErrors.hotel = "Please select where you stayed.";
     if (!expTitle || !expTitle.trim()) nextErrors.title = "Please provide a title for the experience.";
     if (!address || !address.trim()) nextErrors.address = "Please provide the address of the event/attraction.";
+    if (!activityTags || activityTags.length === 0) nextErrors.activities = "Please add at least one activity.";
     setErrors(nextErrors);
+    // focus the first field with an error (hotel -> title -> address -> activities)
+    if (nextErrors.hotel) {
+      try { hotelRef.current?.focus(); } catch {}
+      return;
+    }
     if (nextErrors.title) {
       try { titleRef.current?.focus(); } catch {}
       return;
     }
     if (nextErrors.address) {
       try { addressRef.current?.focus(); } catch {}
+      return;
+    }
+    if (nextErrors.activities) {
+      try { activitySelectRef.current?.focus(); } catch {}
       return;
     }
 
@@ -293,12 +308,17 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
         </div>
 
         {/* Hotel dropdown */}
-        <label className="block mt-3 mb-1 text-gray-700">Where did you stay?</label>
+        <label className="block mt-3 mb-1 text-gray-700">Where did you stay? 
+           <span className="ml-1 text-red-600" aria-hidden="true">*</span>
+        </label>
         <select
+          ref={hotelRef}
           value={hotelId}
           onChange={(e) => {
             const val = e.target.value;
             setHotelId(val);
+            // clear hotel error when user selects
+            setErrors((prev) => ({ ...prev, hotel: "" }));
             // DO NOT overwrite the event/attraction address here; users will enter the
             // specific address where they attended the activity.
           }}
@@ -313,18 +333,22 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
         
         {/* Activities dropdown + tags */}
         {/* Experience title */}
-        <label className="block mt-6 mb-1 text-gray-700">Experience title</label>
+        <label className="block mt-6 mb-1 text-gray-700">Experience title
+           <span className="ml-1 text-red-600" aria-hidden="true">*</span>
+        </label>
         <input
           ref={titleRef}
           value={expTitle}
-          onChange={(e) => setExpTitle(e.target.value)}
+          onChange={(e) => { setExpTitle(e.target.value); setErrors((prev) => ({ ...prev, title: "" })); }}
           placeholder="Name your experience (e.g. Morning Yoga at the Rooftop)"
           className="w-[480px] border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-black"
         />
         {errors.title && <div style={{ color: "#b81843", marginTop: 6, fontSize: 13 }}>{errors.title}</div>}
 
         {/* Address input */}
-        <label className="block mt-3 mb-1 text-gray-700">Address of the event/attraction (where you spent your time)</label>
+        <label className="block mt-3 mb-1 text-gray-700">Address of the event/attraction (where you spent your time)
+           <span className="ml-1 text-red-600" aria-hidden="true">*</span>
+        </label>
         <div style={{ position: "relative", width: 480 }}>
           <input
             ref={addressRef}
@@ -393,11 +417,14 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
           <span style={{ fontSize: 13, color: "#666" }}>{rating ? `${rating} / 5` : "No rating"}</span>
         </div>
 
-        <label className="block mt-6 mb-1 text-gray-700">What did you do?</label>
+        <label className="block mt-6 mb-1 text-gray-700">What did you do?
+           <span className="ml-1 text-red-600" aria-hidden="true">*</span>
+        </label>
         <div className="flex items-center gap-2">
           <select
+            ref={activitySelectRef}
             value={activityId}
-            onChange={(e) => setActivityId(e.target.value)}
+            onChange={(e) => { setActivityId(e.target.value); setErrors((prev) => ({ ...prev, activities: "" })); }}
             className="w-[220px] border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-black"
           >
             {ACTIVITIES.filter(a => hotelId === 'none' || !a.hotelIds || a.hotelIds.length === 0 || a.hotelIds.includes(hotelId)).map((a) => (
@@ -413,6 +440,8 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
               const found = ACTIVITIES.find((a) => a.id === activityId);
               if (!found) return;
               setActivityTags((prev) => (prev.includes(found.name) ? prev : [...prev, found.name]));
+              // clear activity errors when adding a tag
+              setErrors((prev) => ({ ...prev, activities: "" }));
             }}
             className="px-3 py-2 bg-gray-100 rounded-md text-sm"
           >
@@ -437,6 +466,7 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
             ))}
           </div>
         )}
+        {errors.activities && <div style={{ color: '#b81843', marginTop: 6, fontSize: 13 }}>{errors.activities}</div>}
 
         {/* Description */}
         <label className="block mt-6 mb-1 text-gray-700">Description</label>

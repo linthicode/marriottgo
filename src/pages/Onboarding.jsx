@@ -144,7 +144,7 @@ export default function Onboarding() {
 			"foods": 12,
 			// 13 reserved for 'other' or future categories
 		};
-
+		{/*onboarding array */}
 		const scores = new Array(13).fill(0);
 		const ratings = answers["q2_ratings"] || {};
 

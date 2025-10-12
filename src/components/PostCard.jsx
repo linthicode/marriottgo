@@ -163,36 +163,6 @@ export default function PostCard({ post }) {
             >
               @{userHandle}
             </span>
-            <div style={{ position: "relative", display: "inline-block" }}>
-              {pfpImage ? (
-                <img
-                  src={pfpImage}
-                  alt={userHandle}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: "50%",
-                    border: `2.5px solid ${marriottRed}`,
-                    objectFit: "cover",
-                  }}
-                />
-              ) : (
-                <div style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "#fff8fa",
-                  border: `2.5px solid ${marriottRed}`,
-                  color: marriottRed,
-                  fontWeight: 700,
-                }}>
-                  {initials(userHandle)}
-                </div>
-              )}
-            </div>
           </div>
         )}
       </div>
