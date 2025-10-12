@@ -241,6 +241,47 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
     closeToDashboard();
   };
 
+  // Standalone variables (for easy access at the end of the component)
+  // 1) hotel name the user picked
+  const HOTEL_NAME_SELECTED = (hotels.find((h) => String(h.id) === String(hotelId))?.name) || "";
+
+  // 2) experience title string
+  const EXPERIENCE_TITLE_STRING = expTitle || "";
+
+  // 3) address string for the event/attraction
+  const EVENT_ADDRESS_STRING = address || "";
+
+  // 4) tag index array (0/1) according to the mapping provided
+  {/*I think the array works as intended, create an array and fill in int 1 into the end related to the tag*/}
+  const TAG_INDEX_MAP = {
+    "nature": 0,
+    "museums": 1,
+    "theatres_and_entertainments": 2,
+    "urban_environment": 3,
+    "historic": 4,
+    "religion": 5,
+    "architecture": 6,
+    "industrial_facilities": 7,
+    "amusements": 8,
+    "sport": 9,
+    "adult": 10,
+    "shops": 11,
+    "foods": 12,
+  };
+{/*Note: arr is the array with which tag the user added to their post*/}
+  const TAG_INDEX_ARRAY = (() => {
+    const arr = new Array(Object.keys(TAG_INDEX_MAP).length).fill(0);
+    if (!Array.isArray(activityTags)) return arr;
+    activityTags.forEach((t) => {
+      if (!t) return;
+      // normalize tag to match keys (replace spaces with underscores and lowercase)
+      const key = String(t).trim().toLowerCase().replace(/\s+/g, "_");
+      const idx = TAG_INDEX_MAP[key];
+      if (typeof idx === "number") arr[idx] = 1;
+    });
+    return arr;
+  })();
+
   return (
     <div className="grid place-items-center min-h-screen">
       <form
