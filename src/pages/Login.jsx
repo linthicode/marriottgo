@@ -31,13 +31,21 @@ export default function Login() {
             }
 
             if (data) {
+                // Store user in localStorage for persistence
+                localStorage.setItem("mm_current_user", JSON.stringify({
+                    id: data.user?.id,
+                    email: data.user?.email,
+                    username: username
+                }));
+                
                 setMessage("User account created!");
-                // set global user from supabase response
                 setUser(data.user ?? null);
                 setEmail("");
                 setPassword("");
                 setUsername("");
-                navigate("/onboarding");
+                
+                // Use replace to prevent back navigation to login
+                navigate("/onboarding", { replace: true });
                 return;
             }
         } else {
@@ -147,9 +155,6 @@ return (
                 </button>
             </form>
             <div className="mt-4 text-center text-sm text-gray-500">
-                <p>
-                    {/* Dev shortcuts removed for security */}
-                </p>
             </div>
         </div>
     </div>

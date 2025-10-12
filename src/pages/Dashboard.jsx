@@ -29,11 +29,8 @@ export default function Dashboard() {
   function handleReset() {
     if (!confirm("Reset posts to default sample? This will clear saved posts.")) return;
     localStorage.removeItem(KEY);
-    // reset to the same initial sample used above
-    const sample = [
-      {},
-    ];
-    setPosts(sample);
+    // Reset to an empty array - no default posts
+    setPosts([]);
   }
   return (
     <div className="flex min-h-screen">

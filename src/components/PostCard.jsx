@@ -39,12 +39,7 @@ export default function PostCard({ post }) {
     : [];
   const dummyImage = photos[0] || "/images/dummy.jpg";
   const hasPhoto = !!photos[0];
-  function initials(name) {
-    if (!name) return "";
-    const parts = name.split(/\s+/).filter(Boolean);
-    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  }
+
   function titleCase(str) {
     if (!str) return "";
     return str
@@ -71,13 +66,6 @@ export default function PostCard({ post }) {
   const displayUser = sample.user || authUser || null;
   const userHandle =
     displayUser?.handle || displayUser?.user_metadata?.username || displayUser?.email || "";
-  // handle multiple possible avatar fields
-  const pfpImage =
-    displayUser?.avatar ||
-    displayUser?.image ||
-    displayUser?.user_metadata?.avatar_url ||
-    displayUser?.user_metadata?.avatar ||
-    null;
 
   const handleHotelNameClick = () => {
     window.dispatchEvent(

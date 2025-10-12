@@ -10,6 +10,6 @@ export default function ProtectedRoute({ children }) {
       <div className="text-center">Checking session…</div>
     </div>
   );
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/" replace />;
   return children;
 }
