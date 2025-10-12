@@ -2,11 +2,19 @@ import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 const ACTIVITIES = [
-  { id: "a1", name: "Broadway Show"},
-  { id: "a2", name: "Food Tour"},
-  { id: "a3", name: "Rooftop Bar"},
-  { id: "a4", name: "Ferry to Alcatraz"},
-  { id: "a5", name: "Museum Visit"},
+  { id: "nature", name: "nature" },
+  { id: "museums", name: "museums" },
+  { id: "theatres and entertainments", name: "theatres and entertainments" },
+  { id: "urban_ nvironment", name: "urban environment" },
+  { id: "historic", name: "historic" },
+  { id: "religion", name: "religion" },
+  { id: "architecture", name: "architecture" },
+  { id: "industrial facilities", name: "industrial facilities" },
+  { id: "amusements", name: "amusements" },
+  { id: "sport", name: "sport" },
+  { id: "adult", name: "adult" },
+  { id: "shops", name: "shops" },
+  { id: "foods", name: "foods" },
 ];
 
 const fallbackHotels = [
@@ -60,6 +68,10 @@ const fallbackHotels = [
     "lat": 17.423858,
     "lng": 78.478497
   },
+  {"id": 8,
+    "name": "Other",
+    "address": ""
+  }
 ];
 
 const KEY = "mm_posts_v1";
@@ -76,9 +88,15 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
 
   const [hotelId, setHotelId] = useState(hotels[0]?.id || "none");
   const [desc, setDesc] = useState("");
+  const [expTitle, setExpTitle] = useState("");
   const [activityId, setActivityId] = useState(ACTIVITIES[0]?.id || "none");
   const [activityTags, setActivityTags] = useState([]);
   const [photos, setPhotos] = useState([]);
+  // Address should represent the event/attraction location (not the hotel's address)
+  const [address, setAddress] = useState("");
+  const [errors, setErrors] = useState({ title: "", address: "" });
+  const titleRef = useRef();
+  const addressRef = useRef();
   const fileInputRef = useRef();
 
   const closeToDashboard = () => {
@@ -100,6 +118,19 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
 
   const onDone = (e) => {
     e.preventDefault();
+    // validate required fields
+    const nextErrors = { title: "", address: "" };
+    if (!expTitle || !expTitle.trim()) nextErrors.title = "Please provide a title for the experience.";
+    if (!address || !address.trim()) nextErrors.address = "Please provide the address of the event/attraction.";
+    setErrors(nextErrors);
+    if (nextErrors.title) {
+      try { titleRef.current?.focus(); } catch {}
+      return;
+    }
+    if (nextErrors.address) {
+      try { addressRef.current?.focus(); } catch {}
+      return;
+    }
 
     const hotel = hotels.find(h => h.id === hotelId) || { id: "none", name: "" };
     const post = {
@@ -107,6 +138,8 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
       user,
       hotelId: hotel.id,
       hotelName: hotel.name,
+      experienceTitle: expTitle,
+      address,
       activityTags: activityTags,
       caption: desc,
       photos,
@@ -131,6 +164,8 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
         style={{
           position: "relative",
           width: 720,
+          maxHeight: "80vh",
+          overflowY: "auto",
           background: "white",
           color: "#111",
           borderRadius: 12,
@@ -192,7 +227,12 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
         <label className="block mt-3 mb-1 text-gray-700">Where did you stay?</label>
         <select
           value={hotelId}
-          onChange={(e) => setHotelId(e.target.value)}
+          onChange={(e) => {
+            const val = e.target.value;
+            setHotelId(val);
+            // DO NOT overwrite the event/attraction address here; users will enter the
+            // specific address where they attended the activity.
+          }}
           className="w-[300px] border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-black"
         >
           {hotels.map((h) => (
@@ -203,6 +243,28 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
         </select>
         
         {/* Activities dropdown + tags */}
+        {/* Experience title */}
+        <label className="block mt-6 mb-1 text-gray-700">Experience title</label>
+        <input
+          ref={titleRef}
+          value={expTitle}
+          onChange={(e) => setExpTitle(e.target.value)}
+          placeholder="Name your experience (e.g. Morning Yoga at the Rooftop)"
+          className="w-[480px] border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-black"
+        />
+        {errors.title && <div style={{ color: "#b81843", marginTop: 6, fontSize: 13 }}>{errors.title}</div>}
+
+        {/* Address input */}
+        <label className="block mt-3 mb-1 text-gray-700">Address of the event/attraction (where you spent your time)</label>
+        <input
+          ref={addressRef}
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          placeholder="Street, City, Country"
+          className="w-[480px] border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-black"
+        />
+        {errors.address && <div style={{ color: "#b81843", marginTop: 6, fontSize: 13 }}>{errors.address}</div>}
+
         <label className="block mt-6 mb-1 text-gray-700">What did you do?</label>
         <div className="flex items-center gap-2">
           <select
