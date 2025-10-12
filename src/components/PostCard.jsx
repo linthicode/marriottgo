@@ -36,13 +36,16 @@ export default function PostCard({ post }) {
     : [];
   const dummyImage = photos[0] || "/images/dummy.jpg";
   const hotelName = sample.hotelName || "Hotel";
+  // prefer hotelAddress when available for subheading
+  const hotelAddress = sample.hotelAddress || sample.hotelName || "";
   const activityTags = Array.isArray(sample.activityTags)
     ? sample.activityTags
     : [];
   const caption = sample.caption || "";
   const createdAt = sample.createdAt || Date.now();
   const userHandle = sample.user?.handle;
-  const pfpImage = sample.user?.image;
+  // some posts use `avatar` instead of `image` on user
+  const pfpImage = sample.user?.avatar || sample.user?.image;
 
   const handleHotelNameClick = () => {
     window.dispatchEvent(
@@ -84,16 +87,18 @@ export default function PostCard({ post }) {
           >
             {hotelName}
           </span>
-          <span
-            style={{
-              color: marriottRed,
-              fontWeight: 500,
-              fontSize: 16,
-              marginTop: 0,
-            }}
-          >
-            {hotelName}
-          </span>
+          {hotelAddress && (
+            <span
+              style={{
+                color: marriottRed,
+                fontWeight: 500,
+                fontSize: 16,
+                marginTop: 0,
+              }}
+            >
+              {hotelAddress}
+            </span>
+          )}
         </div>
 
         {userHandle && pfpImage && (

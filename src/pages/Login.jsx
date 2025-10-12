@@ -26,8 +26,8 @@ return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
         <div className="flex flex-col justify-center">
             <img
-                src="/marriotgo.svg"
-                alt="MarriotGo Logo"
+                src="/marriottlogo.svg"
+                alt="Marriott Logo"
                 className="h-48 w-auto"
                 draggable={false}
             />
