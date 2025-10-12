@@ -126,8 +126,13 @@ export default function Dashboard() {
   }
 
   function handleReset() {
-    if (!confirm("Clear all posts? This action cannot be undone.")) return;
-    setPosts([]);
+    if (!confirm("Reset posts to default sample? This will clear saved posts.")) return;
+    localStorage.removeItem(KEY);
+    // reset to the same initial sample used above
+    const sample = [
+      {},
+    ];
+    setPosts(sample);
   }
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
