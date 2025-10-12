@@ -1,5 +1,6 @@
 import { useState, useRef, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import { geocode } from "../helper/geoapify";
 import { AuthContext } from "../auth/AuthProvider";
 
 const ACTIVITIES = [
@@ -102,6 +103,11 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
   // Address should represent the event/attraction location (not the hotel's address)
   const [address, setAddress] = useState("");
   const [errors, setErrors] = useState({ title: "", address: "" });
+  const [addressCoords, setAddressCoords] = useState(null);
+  const [suggestions, setSuggestions] = useState([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const debounceRef = useRef(null);
   const titleRef = useRef();
   const addressRef = useRef();
   const fileInputRef = useRef();
@@ -121,6 +127,48 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
       });
     });
     Promise.all(readers).then(imgs => setPhotos(imgs));
+  };
+
+  // Geoapify autocomplete helpers
+  const fetchAddressSuggestions = async (q) => {
+    if (!q) {
+      setSuggestions([]);
+      setLoadingSuggestions(false);
+      return;
+    }
+    setLoadingSuggestions(true);
+    try {
+      const data = await geocode(q);
+      const items = (data?.features || []).map((f) => ({
+        formatted: f.properties?.formatted || f.properties?.address_line1 || "",
+        lat: f.geometry?.coordinates?.[1] ?? null,
+        lon: f.geometry?.coordinates?.[0] ?? null,
+        raw: f,
+      }));
+      setSuggestions(items);
+    } catch (err) {
+      setSuggestions([]);
+    } finally {
+      setLoadingSuggestions(false);
+      setShowSuggestions(true);
+    }
+  };
+
+  const handleAddressChange = (e) => {
+    const val = e.target.value;
+    setAddress(val);
+    setAddressCoords(null);
+    setShowSuggestions(Boolean(val));
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchAddressSuggestions(val), 350);
+  };
+
+  const selectSuggestion = (s) => {
+    if (!s) return;
+    setAddress(s.formatted || "");
+    if (s.lat != null && s.lon != null) setAddressCoords({ lat: s.lat, lng: s.lon });
+    setSuggestions([]);
+    setShowSuggestions(false);
   };
 
   const onDone = (e) => {
@@ -155,6 +203,9 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
       hotelId: hotel.id,
       hotelName: hotel.name,
       hotelAddress: hotel.address,
+      experienceTitle: expTitle,
+      address: address,
+      addressCoords: addressCoords,
       activityTags: activityTags,
       caption: desc,
       photos,
@@ -271,13 +322,44 @@ export default function ModalPost({ hotels = fallbackHotels, onCancel, onCreate 
 
         {/* Address input */}
         <label className="block mt-3 mb-1 text-gray-700">Address of the event/attraction (where you spent your time)</label>
-        <input
-          ref={addressRef}
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          placeholder="Street, City, Country"
-          className="w-[480px] border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-black"
-        />
+        <div style={{ position: "relative", width: 480 }}>
+          <input
+            ref={addressRef}
+            value={address}
+            onChange={handleAddressChange}
+            onFocus={() => setShowSuggestions(Boolean(address))}
+            placeholder="Street, City, Country"
+            className="w-[480px] border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-black"
+            aria-autocomplete="list"
+          />
+          {showSuggestions && (suggestions.length > 0 || loadingSuggestions) && (
+            <div style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              top: 44,
+              background: "white",
+              border: "1px solid #e5e7eb",
+              borderRadius: 8,
+              zIndex: 40,
+              maxHeight: 220,
+              overflowY: "auto",
+              boxShadow: "0 6px 18px rgba(0,0,0,.08)",
+            }}>
+              {loadingSuggestions && <div style={{ padding: 8, color: "#666" }}>Loading...</div>}
+              {suggestions.map((s, i) => (
+                <div
+                  key={i}
+                  onMouseDown={(ev) => { ev.preventDefault(); selectSuggestion(s); }}
+                  style={{ padding: 8, cursor: "pointer", borderBottom: "1px solid #f3f4f6" }}
+                >
+                  {s.formatted}
+                </div>
+              ))}
+              {!loadingSuggestions && suggestions.length === 0 && <div style={{ padding: 8, color: "#666" }}>No suggestions</div>}
+            </div>
+          )}
+        </div>
         {errors.address && <div style={{ color: "#b81843", marginTop: 6, fontSize: 13 }}>{errors.address}</div>}
 
         <label className="block mt-6 mb-1 text-gray-700">What did you do?</label>
